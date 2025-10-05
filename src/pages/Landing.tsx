@@ -1,11 +1,62 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useNavigate } from "react-router-dom";
-import { BookOpen, TrendingUp, Award, Users, Upload, Download } from "lucide-react";
+import { BookOpen, TrendingUp, Award, Users, Upload, Download, Home, Search, User as UserIcon, LogOut } from "lucide-react";
 import heroImage from "@/assets/hero-image.jpg";
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { User } from "@supabase/supabase-js";
+import { useToast } from "@/hooks/use-toast";
 
 const Landing = () => {
   const navigate = useNavigate();
+  const { toast } = useToast();
+  const [user, setUser] = useState<User | null>(null);
+
+  useEffect(() => {
+    // Check auth status
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        setUser(session.user);
+      }
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        if (session) {
+          setUser(session.user);
+        } else {
+          setUser(null);
+        }
+      }
+    );
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    toast({
+      title: "Signed out",
+      description: "You have been successfully signed out",
+    });
+    navigate("/");
+  };
+
+  const handleProtectedAction = (action: string, path: string) => {
+    if (!user) {
+      toast({
+        title: "Sign Up Required",
+        description: "Please sign up to access the notes and unlock your bright future!",
+        variant: "default",
+      });
+      setTimeout(() => {
+        navigate("/auth");
+      }, 2000);
+    } else {
+      navigate(path);
+    }
+  };
 
   const features = [
     {
@@ -42,6 +93,114 @@ const Landing = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      {/* Navbar */}
+      <nav className="sticky top-0 z-50 border-b border-border bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/60">
+        <div className="container mx-auto px-4">
+          <div className="flex items-center justify-between h-16">
+            {/* Logo Section - Left */}
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center">
+                <BookOpen className="w-5 h-5 text-primary-foreground" />
+              </div>
+              <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+                CollegeStar
+              </h1>
+            </div>
+
+            {/* Quick Links - Center */}
+            <div className="hidden md:flex items-center gap-1">
+              <Button 
+                variant="ghost" 
+                className="flex items-center gap-2 px-4 py-2 hover:bg-primary/10"
+                onClick={() => navigate("/")}
+              >
+                <Home className="w-4 h-4" />
+                Home
+              </Button>
+              <Button 
+                variant="ghost" 
+                className="flex items-center gap-2 px-4 py-2 hover:bg-primary/10"
+                onClick={() => handleProtectedAction("explore", "/explore")}
+              >
+                <Search className="w-4 h-4" />
+                Explore
+              </Button>
+              <Button 
+                variant="ghost" 
+                className="flex items-center gap-2 px-4 py-2 hover:bg-primary/10"
+                onClick={() => handleProtectedAction("upload", "/upload")}
+              >
+                <Upload className="w-4 h-4" />
+                Upload
+              </Button>
+            </div>
+
+            {/* User Section - Right */}
+            <div className="flex items-center gap-3">
+              {user ? (
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <UserIcon className="w-4 h-4" />
+                    <span className="hidden sm:inline">
+                      {user.user_metadata?.full_name || user.email}
+                    </span>
+                  </div>
+                  <Button variant="ghost" size="sm" onClick={() => navigate("/dashboard")}>
+                    Dashboard
+                  </Button>
+                  <Button variant="ghost" size="sm" onClick={handleSignOut}>
+                    <LogOut className="w-4 h-4 mr-2" />
+                    Sign Out
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <Button variant="ghost" size="sm" onClick={() => navigate("/auth")}>
+                    Sign In
+                  </Button>
+                  <Button size="sm" onClick={() => navigate("/auth")}>
+                    Sign Up
+                  </Button>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Mobile Quick Links */}
+          <div className="md:hidden border-t border-border py-3">
+            <div className="flex items-center justify-center gap-4">
+              <Button 
+                variant="ghost" 
+                size="sm"
+                className="flex items-center gap-2"
+                onClick={() => navigate("/")}
+              >
+                <Home className="w-4 h-4" />
+                Home
+              </Button>
+              <Button 
+                variant="ghost" 
+                size="sm"
+                className="flex items-center gap-2"
+                onClick={() => handleProtectedAction("explore", "/explore")}
+              >
+                <Search className="w-4 h-4" />
+                Explore
+              </Button>
+              <Button 
+                variant="ghost" 
+                size="sm"
+                className="flex items-center gap-2"
+                onClick={() => handleProtectedAction("upload", "/upload")}
+              >
+                <Upload className="w-4 h-4" />
+                Upload
+              </Button>
+            </div>
+          </div>
+        </div>
+      </nav>
+
       {/* Hero Section */}
       <section className="relative overflow-hidden bg-gradient-to-br from-primary/10 via-secondary/10 to-background">
         <div className="container mx-auto px-4 py-20 md:py-32">
@@ -167,7 +326,7 @@ const Landing = () => {
       {/* Footer */}
       <footer className="py-12 bg-card border-t border-border">
         <div className="container mx-auto px-4 text-center text-muted-foreground">
-          <p>&copy; 2025 StudyHub. Empowering students to learn together.</p>
+          <p>&copy; 2025 CollegeStar. Empowering students to learn together.</p>
         </div>
       </footer>
     </div>

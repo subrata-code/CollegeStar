@@ -68,7 +68,7 @@ const Auth = () => {
 
       toast({
         title: "Account created!",
-        description: "Welcome to StudyHub. You can now start sharing and accessing notes.",
+        description: "Welcome to CollegeStar. You can now start sharing and accessing notes.",
       });
     } catch (error: any) {
       toast({
@@ -116,7 +116,7 @@ const Auth = () => {
             <BookOpen className="w-8 h-8 text-primary-foreground" />
           </div>
           <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-            Welcome to StudyHub
+            Welcome to CollegeStar 
           </h1>
           <p className="text-muted-foreground mt-2">Your academic success starts here</p>
         </div>
