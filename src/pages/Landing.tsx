@@ -406,6 +406,17 @@ const Landing = () => {
       <footer className="py-12 bg-card border-t border-border">
         <div className="container mx-auto px-4 text-center text-muted-foreground">
           <p>&copy; 2025 CollegeStar. Empowering students to learn together.</p>
+          <p className="mt-2">
+            Developed by{' '}
+            <a
+              href="https://subrata-s-portfolio.vercel.app/"
+              className="text-primary hover:underline"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Subrata Bag
+            </a>
+          </p>
         </div>
       </footer>
     </div>
