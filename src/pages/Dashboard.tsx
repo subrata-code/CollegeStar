@@ -85,10 +85,10 @@ const Dashboard = () => {
               <Button 
                 variant="ghost" 
                 className="flex items-center gap-2 px-4 py-2 hover:bg-primary/10"
-                onClick={() => navigate("/dashboard")}
+                onClick={() => navigate("/")}
               >
                 <Home className="w-4 h-4" />
-                Dashboard
+                Home
               </Button>
               <Button 
                 variant="ghost" 
@@ -143,10 +143,10 @@ const Dashboard = () => {
                 variant="ghost" 
                 size="sm"
                 className="flex items-center gap-2"
-                onClick={() => navigate("/dashboard")}
+                onClick={() => navigate("/")}
               >
                 <Home className="w-4 h-4" />
-                Dashboard
+                Home
               </Button>
               <Button 
                 variant="ghost" 
