@@ -1,3 +1,15 @@
+-- Performance indexes for common queries
+-- If these objects already exist, these statements will no-op in most managed environments when run once.
+-- Adjust table/column names if your schema differs.
+
+-- Notes listing by author and recency
+CREATE INDEX IF NOT EXISTS notes_author_created_at_idx ON notes (author_id, created_at DESC);
+
+-- Notes filtering by subject/tag (replace `subject` if your column is named differently)
+CREATE INDEX IF NOT EXISTS notes_subject_idx ON notes (subject);
+
+-- Fast recent notes
+CREATE INDEX IF NOT EXISTS notes_created_at_desc_idx ON notes (created_at DESC);
 -- Create profiles table for public user information
 CREATE TABLE public.profiles (
   id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
