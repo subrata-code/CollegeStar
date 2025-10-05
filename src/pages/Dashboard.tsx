@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { BookOpen, Upload, TrendingUp, Award, FileText, LogOut, Home, Search, User as UserIcon, Menu, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { DonateDialog } from "@/components/DonateDialog";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -13,6 +14,7 @@ const Dashboard = () => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [donatePromptOpen, setDonatePromptOpen] = useState(false);
 
   useEffect(() => {
     // Check auth status
@@ -37,6 +39,16 @@ const Dashboard = () => {
 
     return () => subscription.unsubscribe();
   }, [navigate]);
+
+  useEffect(() => {
+    if (user) {
+      const dismissed = localStorage.getItem("donatePromptDismissed") === "true";
+      const donor = (user as any)?.user_metadata?.donorVerified || localStorage.getItem("donorVerified") === "true";
+      if (!dismissed && !donor) {
+        setTimeout(() => setDonatePromptOpen(true), 1200);
+      }
+    }
+  }, [user]);
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
@@ -276,6 +288,11 @@ const Dashboard = () => {
               </p>
             </CardContent>
           </Card>
+        </div>
+
+        {/* Footer with Donate */}
+        <div className="mt-12 border-t border-border pt-8 flex items-center justify-center">
+          <DonateDialog user={user} defaultOpen={donatePromptOpen} triggerVariant="secondary" />
         </div>
       </div>
     </div>

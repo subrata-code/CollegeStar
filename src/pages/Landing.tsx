@@ -7,12 +7,14 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
 import { useToast } from "@/hooks/use-toast";
+import { DonateDialog } from "@/components/DonateDialog";
 
 const Landing = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [user, setUser] = useState<User | null>(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [donatePromptOpen, setDonatePromptOpen] = useState(false);
 
   useEffect(() => {
     // Check auth status
@@ -34,6 +36,17 @@ const Landing = () => {
 
     return () => subscription.unsubscribe();
   }, []);
+
+  // After login, softly prompt donation once unless dismissed or already donor
+  useEffect(() => {
+    if (user) {
+      const dismissed = localStorage.getItem("donatePromptDismissed") === "true";
+      const donor = (user as any)?.user_metadata?.donorVerified || localStorage.getItem("donorVerified") === "true";
+      if (!dismissed && !donor) {
+        setTimeout(() => setDonatePromptOpen(true), 1200);
+      }
+    }
+  }, [user]);
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
@@ -404,19 +417,24 @@ const Landing = () => {
 
       {/* Footer */}
       <footer className="py-12 bg-card border-t border-border">
-        <div className="container mx-auto px-4 text-center text-muted-foreground">
-          <p>&copy; 2025 CollegeStar. Empowering students to learn together.</p>
-          <p className="mt-2">
-            Developed by{' '}
-            <a
-              href="https://subrata-s-portfolio.vercel.app/"
-              className="text-primary hover:underline"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Subrata Bag
-            </a>
-          </p>
+        <div className="container mx-auto px-4 flex flex-col items-center gap-4 text-muted-foreground">
+          <div className="flex items-center gap-3">
+            <DonateDialog user={user} defaultOpen={donatePromptOpen} triggerVariant="secondary" />
+          </div>
+          <div className="text-center">
+            <p>&copy; 2025 CollegeStar. Empowering students to learn together.</p>
+            <p className="mt-2">
+              Developed by{' '}
+              <a
+                href="https://subrata-s-portfolio.vercel.app/"
+                className="text-primary hover:underline"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Subrata Bag
+              </a>
+            </p>
+          </div>
         </div>
       </footer>
     </div>
