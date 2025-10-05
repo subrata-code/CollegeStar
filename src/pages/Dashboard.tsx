@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { BookOpen, Upload, TrendingUp, Award, FileText, LogOut, Home, Search, User as UserIcon } from "lucide-react";
+import { BookOpen, Upload, TrendingUp, Award, FileText, LogOut, Home, Search, User as UserIcon, Menu, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 const Dashboard = () => {
@@ -12,6 +12,7 @@ const Dashboard = () => {
   const { toast } = useToast();
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     // Check auth status
@@ -44,6 +45,15 @@ const Dashboard = () => {
       description: "You have been successfully signed out",
     });
     navigate("/");
+  };
+
+  const toggleMobileMenu = () => {
+    setIsMobileMenuOpen(!isMobileMenuOpen);
+  };
+
+  const handleMobileNavigation = (path: string) => {
+    setIsMobileMenuOpen(false);
+    navigate(path);
   };
 
   if (loading) {

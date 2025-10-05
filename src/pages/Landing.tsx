@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useNavigate } from "react-router-dom";
-import { BookOpen, TrendingUp, Award, Users, Upload, Download, Home, Search, User as UserIcon, LogOut } from "lucide-react";
+import { BookOpen, TrendingUp, Award, Users, Upload, Download, Home, Search, User as UserIcon, LogOut, Menu, X } from "lucide-react";
 import heroImage from "@/assets/hero-image.jpg";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -12,6 +12,7 @@ const Landing = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [user, setUser] = useState<User | null>(null);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     // Check auth status
@@ -56,6 +57,20 @@ const Landing = () => {
     } else {
       navigate(path);
     }
+  };
+
+  const toggleMobileMenu = () => {
+    setIsMobileMenuOpen(!isMobileMenuOpen);
+  };
+
+  const handleMobileNavigation = (path: string) => {
+    setIsMobileMenuOpen(false);
+    navigate(path);
+  };
+
+  const handleMobileProtectedAction = (action: string, path: string) => {
+    setIsMobileMenuOpen(false);
+    handleProtectedAction(action, path);
   };
 
   const features = [
@@ -107,7 +122,7 @@ const Landing = () => {
               </h1>
             </div>
 
-            {/* Quick Links - Center */}
+            {/* Desktop Quick Links - Center */}
             <div className="hidden md:flex items-center gap-1">
               <Button 
                 variant="ghost" 
@@ -135,8 +150,8 @@ const Landing = () => {
               </Button>
             </div>
 
-            {/* User Section - Right */}
-            <div className="flex items-center gap-3">
+            {/* Desktop User Section - Right */}
+            <div className="hidden md:flex items-center gap-3">
               {user ? (
                 <div className="flex items-center gap-3">
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -164,38 +179,102 @@ const Landing = () => {
                 </div>
               )}
             </div>
+
+            {/* Mobile Menu Button */}
+            <div className="md:hidden">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={toggleMobileMenu}
+                className="p-2"
+              >
+                {isMobileMenuOpen ? (
+                  <X className="w-6 h-6" />
+                ) : (
+                  <Menu className="w-6 h-6" />
+                )}
+              </Button>
+            </div>
           </div>
 
-          {/* Mobile Quick Links */}
-          <div className="md:hidden border-t border-border py-3">
-            <div className="flex items-center justify-center gap-4">
-              <Button 
-                variant="ghost" 
-                size="sm"
-                className="flex items-center gap-2"
-                onClick={() => navigate("/")}
-              >
-                <Home className="w-4 h-4" />
-                Home
-              </Button>
-              <Button 
-                variant="ghost" 
-                size="sm"
-                className="flex items-center gap-2"
-                onClick={() => handleProtectedAction("explore", "/explore")}
-              >
-                <Search className="w-4 h-4" />
-                Explore
-              </Button>
-              <Button 
-                variant="ghost" 
-                size="sm"
-                className="flex items-center gap-2"
-                onClick={() => handleProtectedAction("upload", "/upload")}
-              >
-                <Upload className="w-4 h-4" />
-                Upload
-              </Button>
+          {/* Mobile Menu - Smooth Animation */}
+          <div className={`md:hidden overflow-hidden transition-all duration-300 ease-in-out ${
+            isMobileMenuOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
+          }`}>
+            <div className="border-t border-border py-4 space-y-2">
+              {/* Mobile Navigation Links */}
+              <div className="space-y-2">
+                <Button 
+                  variant="ghost" 
+                  className="w-full justify-start gap-3 h-12"
+                  onClick={() => handleMobileNavigation("/")}
+                >
+                  <Home className="w-5 h-5" />
+                  Home
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  className="w-full justify-start gap-3 h-12"
+                  onClick={() => handleMobileProtectedAction("explore", "/explore")}
+                >
+                  <Search className="w-5 h-5" />
+                  Explore
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  className="w-full justify-start gap-3 h-12"
+                  onClick={() => handleMobileProtectedAction("upload", "/upload")}
+                >
+                  <Upload className="w-5 h-5" />
+                  Upload
+                </Button>
+              </div>
+
+              {/* Mobile User Section */}
+              <div className="border-t border-border pt-4 mt-4">
+                {user ? (
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground px-3 py-2">
+                      <UserIcon className="w-4 h-4" />
+                      <span>{user.user_metadata?.full_name || user.email}</span>
+                    </div>
+                    <Button 
+                      variant="ghost" 
+                      className="w-full justify-start gap-3 h-12"
+                      onClick={() => handleMobileNavigation("/dashboard")}
+                    >
+                      <Home className="w-5 h-5" />
+                      Dashboard
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      className="w-full justify-start gap-3 h-12 text-red-600 hover:text-red-700 hover:bg-red-50"
+                      onClick={handleSignOut}
+                    >
+                      <LogOut className="w-5 h-5" />
+                      Sign Out
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <Button 
+                      variant="ghost" 
+                      className="w-full justify-start gap-3 h-12"
+                      onClick={() => handleMobileNavigation("/auth")}
+                    >
+                      <UserIcon className="w-5 h-5" />
+                      Sign In
+                    </Button>
+                    <Button 
+                      className="w-full justify-start gap-3 h-12"
+                      onClick={() => handleMobileNavigation("/auth")}
+                    >
+                      <UserIcon className="w-5 h-5" />
+                      Sign Up
+                    </Button>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
