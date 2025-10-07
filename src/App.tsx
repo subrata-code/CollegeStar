@@ -10,6 +10,7 @@ import UploadNotes from "./pages/UploadNotes";
 import ExploreNotes from "./pages/ExploreNotes";
 import AuthorProfile from "./pages/AuthorProfile";
 import NotFound from "./pages/NotFound";
+import Onboarding from "./pages/Onboarding";
 
 const queryClient = new QueryClient();
 
@@ -22,6 +23,7 @@ const App = () => (
         <Routes>
           <Route path="/" element={<Landing />} />
           <Route path="/auth" element={<Auth />} />
+          <Route path="/onboarding" element={<Onboarding />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/upload" element={<UploadNotes />} />
           <Route path="/explore" element={<ExploreNotes />} />
