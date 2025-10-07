@@ -8,10 +8,12 @@ import {
   DialogDescription,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { BadgeCheck, Coffee, ExternalLink } from "lucide-react";
+import { BadgeCheck, Coffee, ExternalLink, Smartphone, Monitor, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import type { User } from "@supabase/supabase-js";
+import QRCode from "qrcode";
+import { usePaymentVerification } from "@/hooks/usePaymentVerification";
 
 type DonateDialogProps = {
   user: User | null;
@@ -23,11 +25,70 @@ export function DonateDialog({ user, defaultOpen = false, triggerVariant = "seco
   const { toast } = useToast();
   const [open, setOpen] = useState(defaultOpen);
   const [selectedAmount, setSelectedAmount] = useState<number>(100);
+  const [qrCodeDataUrl, setQrCodeDataUrl] = useState<string>("");
+  const [isGeneratingQR, setIsGeneratingQR] = useState(false);
   const amounts = useMemo(() => [20, 50, 70, 100, 200, 500], []);
+  const { status, start, stop } = usePaymentVerification({ timeoutMs: 20000, intervalMs: 2000 });
+
+  // Detect if user is on mobile device
+  const isMobile = useMemo(() => {
+    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || 
+           window.innerWidth <= 768;
+  }, []);
 
   useEffect(() => {
     setOpen(defaultOpen);
   }, [defaultOpen]);
+
+  // React to verification status changes
+  useEffect(() => {
+    if (status === "verified") {
+      // Persist donor perks and close
+      (async () => {
+        try {
+          if (user) {
+            await supabase.auth.updateUser({
+              data: {
+                donorVerified: true,
+                donorAmount: selectedAmount,
+                donorAt: new Date().toISOString(),
+              },
+            });
+          }
+          localStorage.setItem("donorVerified", "true");
+          toast({ title: "Thank you!", description: "Payment verified. Perks unlocked." });
+          setOpen(false);
+        } catch (error: any) {
+          toast({ title: "Could not update status", description: error?.message || "Please try again." });
+        }
+      })();
+    }
+
+    if (status === "timeout") {
+      // Professional notice then fallback in 5s
+      toast({
+        title: "Payment not verified yet",
+        description: "We couldn't confirm your transaction. Please complete the payment using UPI app or QR code.",
+        variant: "destructive",
+        duration: 5000,
+      });
+      window.setTimeout(() => {
+        if (isMobile) {
+          // Re-open UPI app
+          try {
+            window.location.href = upiUrl;
+          } catch {
+            window.open(upiUrl, "_blank");
+          }
+        } else {
+          // Ensure QR code is shown
+          if (!qrCodeDataUrl) {
+            generateQRCode();
+          }
+        }
+      }, 5000);
+    }
+  }, [status]);
 
   const isDonor = Boolean(
     (user as any)?.user_metadata?.donorVerified || localStorage.getItem("donorVerified") === "true"
@@ -44,32 +105,44 @@ export function DonateDialog({ user, defaultOpen = false, triggerVariant = "seco
     return `upi://pay?${params.toString()}`;
   }, [selectedAmount]);
 
-  const proceedToPay = () => {
+  // Generate QR code for desktop users
+  const generateQRCode = async () => {
+    setIsGeneratingQR(true);
     try {
-      // Best effort: open UPI app via intent URL; fallback opens in same tab
-      window.location.href = upiUrl;
-    } catch (e) {
-      window.open(upiUrl, "_blank");
+      const qrDataUrl = await QRCode.toDataURL(upiUrl, {
+        width: 256,
+        margin: 2,
+        color: {
+          dark: '#000000',
+          light: '#FFFFFF'
+        }
+      });
+      setQrCodeDataUrl(qrDataUrl);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to generate QR code. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGeneratingQR(false);
     }
   };
 
-  const markAsPaid = async () => {
-    try {
-      if (user) {
-        await supabase.auth.updateUser({
-          data: {
-            donorVerified: true,
-            donorAmount: selectedAmount,
-            donorAt: new Date().toISOString(),
-          },
-        });
+  const proceedToPay = () => {
+    if (isMobile) {
+      try {
+        // Best effort: open UPI app via intent URL; fallback opens in same tab
+        window.location.href = upiUrl;
+      } catch (e) {
+        window.open(upiUrl, "_blank");
       }
-      localStorage.setItem("donorVerified", "true");
-      toast({ title: "Thank you!", description: "Your support means a lot. Perks unlocked." });
-      setOpen(false);
-    } catch (error: any) {
-      toast({ title: "Could not update status", description: error?.message || "Please try again." });
+    } else {
+      // For desktop users, generate QR code
+      generateQRCode();
     }
+    // Start verification polling after initiating payment
+    start();
   };
 
   const dismissForNow = () => {
@@ -112,15 +185,60 @@ export function DonateDialog({ user, defaultOpen = false, triggerVariant = "seco
                 </Button>
               ))}
             </div>
-            <div className="flex flex-col sm:flex-row gap-2">
-              <Button onClick={proceedToPay} className="w-full gap-2">
-                Proceed to Pay
-                <ExternalLink className="w-4 h-4" />
-              </Button>
-              <Button variant="secondary" onClick={markAsPaid} className="w-full">
-                I've completed payment
-              </Button>
-            </div>
+
+            {/* Device-specific payment UI */}
+            {isMobile ? (
+              <div className="flex flex-col sm:flex-row gap-2">
+                <Button onClick={proceedToPay} className="w-full gap-2">
+                  <Smartphone className="w-4 h-4" />
+                  Open UPI App
+                  <ExternalLink className="w-4 h-4" />
+                </Button>
+                {status === "pending" && (
+                  <div className="w-full text-center text-sm text-muted-foreground py-2 flex items-center justify-center gap-2">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Waiting for payment confirmation…
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {!qrCodeDataUrl ? (
+                  <Button 
+                    onClick={proceedToPay} 
+                    className="w-full gap-2"
+                    disabled={isGeneratingQR}
+                  >
+                    <Monitor className="w-4 h-4" />
+                    {isGeneratingQR ? "Generating QR Code..." : "Generate QR Code"}
+                  </Button>
+                ) : (
+                  <div className="text-center space-y-3">
+                    <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+                      <Monitor className="w-4 h-4" />
+                      Scan with your UPI app
+                    </div>
+                    <div className="flex justify-center">
+                      <img 
+                        src={qrCodeDataUrl} 
+                        alt="UPI Payment QR Code" 
+                        className="border rounded-lg p-2 bg-white"
+                      />
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      Amount: ₹{selectedAmount} | UPI ID: namitabag@naviaxis
+                    </div>
+                  </div>
+                )}
+                {status === "pending" && (
+                  <div className="w-full text-center text-sm text-muted-foreground py-2 flex items-center justify-center gap-2">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Waiting for payment confirmation…
+                  </div>
+                )}
+              </div>
+            )}
+
             <Button variant="ghost" onClick={dismissForNow} className="w-full">
               Maybe later
             </Button>
@@ -136,5 +254,6 @@ export function DonateDialog({ user, defaultOpen = false, triggerVariant = "seco
     </Dialog>
   );
 }
+
 
 
