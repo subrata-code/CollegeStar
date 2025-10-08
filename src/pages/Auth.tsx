@@ -28,7 +28,12 @@ const Auth = () => {
         setUser(session?.user ?? null);
         
         if (session?.user) {
-          navigate("/dashboard");
+          const profileCompletion = (session.user as any)?.user_metadata?.profileCompletion as number | undefined;
+          if (!profileCompletion || profileCompletion < 70) {
+            navigate("/onboarding");
+          } else {
+            navigate("/dashboard");
+          }
         }
       }
     );
@@ -39,7 +44,12 @@ const Auth = () => {
       setUser(session?.user ?? null);
       
       if (session?.user) {
-        navigate("/dashboard");
+        const profileCompletion = (session.user as any)?.user_metadata?.profileCompletion as number | undefined;
+        if (!profileCompletion || profileCompletion < 70) {
+          navigate("/onboarding");
+        } else {
+          navigate("/dashboard");
+        }
       }
     });
 

@@ -205,6 +205,21 @@ const Dashboard = () => {
           <p className="text-muted-foreground">Here's an overview of your academic journey</p>
         </div>
 
+        {/* Profile Completion Banner */}
+        {user && (!(user as any)?.user_metadata?.profileCompletion || (user as any)?.user_metadata?.profileCompletion < 100) && (
+          <Card className="mb-8 border-dashed">
+            <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+              <div>
+                <CardTitle>Complete your profile</CardTitle>
+                <CardDescription>
+                  {Math.max((user as any)?.user_metadata?.profileCompletion || 0, 0)}% complete — finish your profile to unlock tailored recommendations
+                </CardDescription>
+              </div>
+              <Button onClick={() => navigate("/onboarding")}>Continue Profile</Button>
+            </CardHeader>
+          </Card>
+        )}
+
         {/* Stats Grid */}
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           {stats.map((stat, index) => (
