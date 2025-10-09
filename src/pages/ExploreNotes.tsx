@@ -53,10 +53,10 @@ const ExploreNotes = () => {
 
       if (error) throw error;
       setNotes(data || []);
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: "Error",
-        description: error.message,
+        description: (error as Error)?.message || "An error occurred",
         variant: "destructive",
       });
     } finally {
@@ -86,10 +86,10 @@ const ExploreNotes = () => {
         title: "Download started",
         description: "Your download has begun",
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: "Error",
-        description: error.message,
+        description: (error as Error)?.message || "An error occurred",
         variant: "destructive",
       });
     }

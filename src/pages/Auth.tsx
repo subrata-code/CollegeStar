@@ -28,7 +28,7 @@ const Auth = () => {
         setUser(session?.user ?? null);
         
         if (session?.user) {
-          const profileCompletion = (session.user as any)?.user_metadata?.profileCompletion as number | undefined;
+          const profileCompletion = ((session.user.user_metadata as Record<string, unknown>)?.profileCompletion as number) || undefined;
           if (!profileCompletion || profileCompletion < 70) {
             navigate("/onboarding");
           } else {
@@ -44,7 +44,7 @@ const Auth = () => {
       setUser(session?.user ?? null);
       
       if (session?.user) {
-        const profileCompletion = (session.user as any)?.user_metadata?.profileCompletion as number | undefined;
+        const profileCompletion = ((session.user.user_metadata as Record<string, unknown>)?.profileCompletion as number) || undefined;
         if (!profileCompletion || profileCompletion < 70) {
           navigate("/onboarding");
         } else {
@@ -80,10 +80,10 @@ const Auth = () => {
         title: "Account created!",
         description: "Welcome to CollegeStar. You can now start sharing and accessing notes.",
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: "Sign up failed",
-        description: error.message || "An error occurred during sign up",
+        description: (error as Error)?.message || "An error occurred during sign up",
         variant: "destructive",
       });
     } finally {
@@ -107,10 +107,10 @@ const Auth = () => {
         title: "Welcome back!",
         description: "Successfully signed in",
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: "Sign in failed",
-        description: error.message || "Invalid email or password",
+        description: (error as Error)?.message || "Invalid email or password",
         variant: "destructive",
       });
     } finally {

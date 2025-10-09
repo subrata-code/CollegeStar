@@ -39,7 +39,7 @@ const Onboarding = () => {
   const completionPercent = useMemo(() => {
     const fields = ["institute", "course", "stream", "interests", "lastQualification", "aim", "studyHours", "preferredContent"] as const;
     const filled = fields.filter((f) => {
-      const v = (draft as any)[f];
+      const v = (draft as Record<string, unknown>)[f];
       if (Array.isArray(v)) return v.length > 0;
       return Boolean(v && String(v).trim().length > 0);
     }).length;
@@ -57,8 +57,8 @@ const Onboarding = () => {
       });
       toast({ title: "Profile saved", description: "Your preferences are updated." });
       navigate("/dashboard");
-    } catch (error: any) {
-      toast({ title: "Save failed", description: error?.message || "Please try again.", variant: "destructive" });
+    } catch (error: unknown) {
+      toast({ title: "Save failed", description: (error as Error)?.message || "Please try again.", variant: "destructive" });
     } finally {
       setLoading(false);
     }
@@ -167,5 +167,6 @@ const Onboarding = () => {
 };
 
 export default Onboarding;
+
 
 

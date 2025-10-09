@@ -41,8 +41,8 @@ const Profile = () => {
         const { data } = await supabase.auth.getUser();
         const user = data.user;
         setEmail(user.email || "");
-        setFullName((user as any)?.user_metadata?.full_name || "");
-        const profile = (user as any)?.user_metadata?.profile as ProfileDraft | undefined;
+        setFullName(((user?.user_metadata as Record<string, unknown>)?.full_name as string) || "");
+        const profile = ((user?.user_metadata as Record<string, unknown>)?.profile as ProfileDraft) || undefined;
         if (profile) setDraft(profile);
       } finally {
         setLoading(false);
@@ -53,7 +53,7 @@ const Profile = () => {
   const completionPercent = useMemo(() => {
     const fields = ["institute", "course", "stream", "interests", "lastQualification", "aim", "studyHours", "preferredContent"] as const;
     const filled = fields.filter((f) => {
-      const v = (draft as any)[f];
+      const v = (draft as Record<string, unknown>)[f];
       if (Array.isArray(v)) return v.length > 0;
       return Boolean(v && String(v).trim().length > 0);
     }).length;
@@ -79,8 +79,8 @@ const Profile = () => {
         },
       });
       toast({ title: "Profile updated", description: "Your information has been saved." });
-    } catch (error: any) {
-      toast({ title: "Update failed", description: error?.message || "Please try again.", variant: "destructive" });
+    } catch (error: unknown) {
+      toast({ title: "Update failed", description: (error as Error)?.message || "Please try again.", variant: "destructive" });
     } finally {
       setSaving(false);
     }

@@ -58,8 +58,8 @@ export function DonateDialog({ user, defaultOpen = false, triggerVariant = "seco
           localStorage.setItem("donorVerified", "true");
           toast({ title: "Thank you!", description: "Payment verified. Perks unlocked." });
           setOpen(false);
-        } catch (error: any) {
-          toast({ title: "Could not update status", description: error?.message || "Please try again." });
+        } catch (error: unknown) {
+          toast({ title: "Could not update status", description: (error as Error)?.message || "Please try again." });
         }
       })();
     }
@@ -91,7 +91,7 @@ export function DonateDialog({ user, defaultOpen = false, triggerVariant = "seco
   }, [status]);
 
   const isDonor = Boolean(
-    (user as any)?.user_metadata?.donorVerified || localStorage.getItem("donorVerified") === "true"
+    (user?.user_metadata as Record<string, unknown>)?.donorVerified || localStorage.getItem("donorVerified") === "true"
   );
 
   const upiUrl = useMemo(() => {

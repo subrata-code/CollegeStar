@@ -59,10 +59,10 @@ const AuthorProfile = () => {
 
       if (notesError) throw notesError;
       setNotes(notesData || []);
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: "Error",
-        description: error.message,
+        description: (error as Error)?.message || "An error occurred",
         variant: "destructive",
       });
     } finally {
@@ -89,10 +89,10 @@ const AuthorProfile = () => {
         title: "Download started",
         description: "Your download has begun",
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: "Error",
-        description: error.message,
+        description: (error as Error)?.message || "An error occurred",
         variant: "destructive",
       });
     }

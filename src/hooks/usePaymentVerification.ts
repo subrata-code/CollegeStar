@@ -34,7 +34,7 @@ export function usePaymentVerification(options?: { timeoutMs?: number; intervalM
       try {
         const { data, error } = await supabase.auth.getUser();
         if (error) return;
-        const donor = (data.user as any)?.user_metadata?.donorVerified === true;
+        const donor = (data.user?.user_metadata as Record<string, unknown>)?.donorVerified === true;
         if (donor || localStorage.getItem("donorVerified") === "true") {
           setStatus("verified");
           stop();
@@ -55,6 +55,7 @@ export function usePaymentVerification(options?: { timeoutMs?: number; intervalM
 
   return { status, errorMessage, start, stop } as const;
 }
+
 
 
 

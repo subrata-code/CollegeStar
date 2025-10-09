@@ -41,7 +41,7 @@ const Landing = () => {
   useEffect(() => {
     if (user) {
       const dismissed = localStorage.getItem("donatePromptDismissed") === "true";
-      const donor = (user as any)?.user_metadata?.donorVerified || localStorage.getItem("donorVerified") === "true";
+      const donor = (user?.user_metadata as Record<string, unknown>)?.donorVerified || localStorage.getItem("donorVerified") === "true";
       if (!dismissed && !donor) {
         setTimeout(() => setDonatePromptOpen(true), 1200);
       }

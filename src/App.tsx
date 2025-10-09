@@ -10,11 +10,8 @@ import UploadNotes from "./pages/UploadNotes";
 import ExploreNotes from "./pages/ExploreNotes";
 import AuthorProfile from "./pages/AuthorProfile";
 import NotFound from "./pages/NotFound";
-<<<<<<< HEAD
 import Profile from "./pages/Profile";
-=======
 import Onboarding from "./pages/Onboarding";
->>>>>>> c0e5d0f2d6adf8496a3d2edcf06649a83a544696
 
 const queryClient = new QueryClient();
 

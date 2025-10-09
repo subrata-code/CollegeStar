@@ -91,10 +91,10 @@ const UploadNotes = () => {
       });
 
       navigate("/explore");
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: "Upload failed",
-        description: error.message,
+        description: (error as Error)?.message || "An error occurred",
         variant: "destructive",
       });
     } finally {

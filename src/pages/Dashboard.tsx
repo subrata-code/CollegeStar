@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { BookOpen, Upload, TrendingUp, Award, FileText, LogOut, Home, Search, User as UserIcon, Menu, X } from "lucide-react";
+import { BookOpen, Upload, Award, FileText, LogOut, Home, Search, User as UserIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { DonateDialog } from "@/components/DonateDialog";
 
@@ -43,7 +43,7 @@ const Dashboard = () => {
   useEffect(() => {
     if (user) {
       const dismissed = localStorage.getItem("donatePromptDismissed") === "true";
-      const donor = (user as any)?.user_metadata?.donorVerified || localStorage.getItem("donorVerified") === "true";
+      const donor = (user?.user_metadata as Record<string, unknown>)?.donorVerified || localStorage.getItem("donorVerified") === "true";
       if (!dismissed && !donor) {
         setTimeout(() => setDonatePromptOpen(true), 1200);
       }
@@ -206,13 +206,13 @@ const Dashboard = () => {
         </div>
 
         {/* Profile Completion Banner */}
-        {user && (!(user as any)?.user_metadata?.profileCompletion || (user as any)?.user_metadata?.profileCompletion < 100) && (
+        {user && (!(user?.user_metadata as Record<string, unknown>)?.profileCompletion || ((user?.user_metadata as Record<string, unknown>)?.profileCompletion as number) < 100) && (
           <Card className="mb-8 border-dashed">
             <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
               <div>
                 <CardTitle>Complete your profile</CardTitle>
                 <CardDescription>
-                  {Math.max((user as any)?.user_metadata?.profileCompletion || 0, 0)}% complete — finish your profile to unlock tailored recommendations
+                  {Math.max(((user?.user_metadata as Record<string, unknown>)?.profileCompletion as number) || 0, 0)}% complete — finish your profile to unlock tailored recommendations
                 </CardDescription>
               </div>
               <Button onClick={() => navigate("/onboarding")}>Continue Profile</Button>
