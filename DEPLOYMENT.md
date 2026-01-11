@@ -54,3 +54,4 @@ If you still get 404 errors:
 - The `vercel.json` configuration excludes `/api/*` routes from the rewrite rule
 - Security headers have been added for better protection
 - The configuration is optimized for React Router DOM
+
