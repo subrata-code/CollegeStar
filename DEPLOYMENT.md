@@ -12,7 +12,7 @@ The `vercel.json` file has been created to handle this issue by redirecting all 
 
 ### 1. Environment Variables
 Make sure these environment variables are set in your Vercel dashboard:
-
+its all been have origin
 ```
 VITE_SUPABASE_URL=your_supabase_url
 VITE_SUPABASE_PUBLISHABLE_KEY=your_supabase_anon_key
