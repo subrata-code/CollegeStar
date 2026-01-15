@@ -1,12 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 
 type ProfileDraft = {
   institute?: string;
@@ -25,16 +25,17 @@ const contentOptions = ["Notes", "PDFs", "Video", "Quizzes"];
 const Onboarding = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { user, loading: authLoading } = useAuth();
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState(1);
   const [draft, setDraft] = useState<ProfileDraft>({});
 
   useEffect(() => {
-    // If already logged out, send to auth
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!session) navigate("/auth");
-    });
-  }, [navigate]);
+    // If not logged in, send to auth
+    if (!authLoading && !user) {
+      navigate("/auth");
+    }
+  }, [user, authLoading, navigate]);
 
   const completionPercent = useMemo(() => {
     const fields = ["institute", "course", "stream", "interests", "lastQualification", "aim", "studyHours", "preferredContent"] as const;
@@ -47,14 +48,34 @@ const Onboarding = () => {
   }, [draft]);
 
   const handleSave = async () => {
+    if (!user) return;
+
     setLoading(true);
     try {
-      await supabase.auth.updateUser({
-        data: {
-          profile: draft,
-          profileCompletion: completionPercent,
+      const token = localStorage.getItem('token');
+      const response = await fetch(`http://localhost:5000/api/profiles/${user.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
         },
+        body: JSON.stringify({
+          institute: draft.institute,
+          course: draft.course,
+          stream: draft.stream,
+          interests: draft.interests,
+          lastQualification: draft.lastQualification,
+          aim: draft.aim,
+          studyHours: draft.studyHours,
+          preferredContent: draft.preferredContent,
+          profileCompletion: completionPercent,
+        }),
       });
+
+      if (!response.ok) {
+        throw new Error('Failed to save profile');
+      }
+
       toast({ title: "Profile saved", description: "Your preferences are updated." });
       navigate("/dashboard");
     } catch (error: unknown) {

@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { BookOpen, Upload, Award, FileText, LogOut, Home, Search, User as UserIcon } from "lucide-react";
@@ -11,7 +10,7 @@ import { useAuth } from "@/contexts/AuthContext";
 const Dashboard = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { user, loading } = useAuth();
+  const { user, loading, logout } = useAuth();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [donatePromptOpen, setDonatePromptOpen] = useState(false);
 
@@ -32,7 +31,7 @@ const Dashboard = () => {
   }, [user]);
 
   const handleSignOut = async () => {
-    await supabase.auth.signOut();
+    logout();
     toast({
       title: "Signed out",
       description: "You have been successfully signed out",
@@ -291,7 +290,7 @@ const Dashboard = () => {
 
         {/* Footer with Donate */}
         <div className="mt-12 border-t border-border pt-8 flex items-center justify-center">
-          <DonateDialog user={user} defaultOpen={donatePromptOpen} triggerVariant="secondary" />
+          <DonateDialog defaultOpen={donatePromptOpen} triggerVariant="secondary" />
         </div>
       </div>
     </div>

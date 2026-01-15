@@ -10,19 +10,18 @@ import {
 } from "@/components/ui/dialog";
 import { BadgeCheck, Coffee, ExternalLink, Smartphone, Monitor, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
-import type { User } from "@supabase/supabase-js";
 import QRCode from "qrcode";
 import { usePaymentVerification } from "@/hooks/usePaymentVerification";
+import { useAuth } from "@/contexts/AuthContext";
 
 type DonateDialogProps = {
-  user: User | null;
   defaultOpen?: boolean;
   triggerVariant?: "default" | "secondary" | "outline" | "ghost" | "accent" | "hero";
 };
 
-export function DonateDialog({ user, defaultOpen = false, triggerVariant = "secondary" }: DonateDialogProps) {
+export function DonateDialog({ defaultOpen = false, triggerVariant = "secondary" }: DonateDialogProps) {
   const { toast } = useToast();
+  const { user } = useAuth();
   const [open, setOpen] = useState(defaultOpen);
   const [selectedAmount, setSelectedAmount] = useState<number>(100);
   const [qrCodeDataUrl, setQrCodeDataUrl] = useState<string>("");
@@ -47,12 +46,18 @@ export function DonateDialog({ user, defaultOpen = false, triggerVariant = "seco
       (async () => {
         try {
           if (user) {
-            await supabase.auth.updateUser({
-              data: {
+            const token = localStorage.getItem('token');
+            await fetch(`http://localhost:5000/api/profiles/${user.id}`, {
+              method: 'PUT',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`,
+              },
+              body: JSON.stringify({
                 donorVerified: true,
                 donorAmount: selectedAmount,
                 donorAt: new Date().toISOString(),
-              },
+              }),
             });
           }
           localStorage.setItem("donorVerified", "true");
@@ -90,9 +95,7 @@ export function DonateDialog({ user, defaultOpen = false, triggerVariant = "seco
     }
   }, [status]);
 
-  const isDonor = Boolean(
-    (user?.user_metadata as Record<string, unknown>)?.donorVerified || localStorage.getItem("donorVerified") === "true"
-  );
+  const isDonor = Boolean(localStorage.getItem("donorVerified") === "true");
 
   const upiUrl = useMemo(() => {
     const params = new URLSearchParams({

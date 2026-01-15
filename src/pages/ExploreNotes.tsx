@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -18,8 +17,8 @@ interface Note {
   file_name: string;
   download_count: number;
   created_at: string;
-  user_id: string;
-  profiles: {
+  user_id: {
+    _id: string;
     full_name: string;
   };
 }
@@ -40,18 +39,11 @@ const ExploreNotes = () => {
 
   const fetchNotes = async () => {
     try {
-      const { data, error } = await supabase
-        .from('notes')
-        .select(`
-          *,
-          profiles (
-            full_name
-          )
-        `)
-        .order('download_count', { ascending: false })
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
+      const response = await fetch('http://localhost:5000/api/notes');
+      if (!response.ok) {
+        throw new Error('Failed to fetch notes');
+      }
+      const data = await response.json();
       setNotes(data || []);
     } catch (error: unknown) {
       toast({
@@ -66,19 +58,26 @@ const ExploreNotes = () => {
 
   const handleDownload = async (note: Note) => {
     try {
+      const token = localStorage.getItem('token');
       // Increment download count
-      const { error } = await supabase
-        .from('notes')
-        .update({ download_count: note.download_count + 1 })
-        .eq('id', note.id);
+      const response = await fetch(`http://localhost:5000/api/notes/${note.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ download_count: note.download_count + 1 }),
+      });
 
-      if (error) throw error;
+      if (!response.ok) {
+        throw new Error('Failed to update download count');
+      }
 
       // Trigger download
       window.open(note.file_url, '_blank');
 
       // Update local state
-      setNotes(notes.map(n => 
+      setNotes(notes.map(n =>
         n.id === note.id ? { ...n, download_count: n.download_count + 1 } : n
       ));
 
@@ -202,7 +201,7 @@ const ExploreNotes = () => {
                       size="sm" 
                       variant="outline"
                       className="flex-1"
-                      onClick={() => navigate(`/author/${note.user_id}`)}
+                      onClick={() => navigate(`/author/${note.user_id._id}`)}
                     >
                       <User className="w-4 h-4 mr-1" />
                       Author

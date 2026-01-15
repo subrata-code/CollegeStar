@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -41,23 +40,19 @@ const AuthorProfile = () => {
   const fetchAuthorData = async () => {
     try {
       // Fetch profile
-      const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .single();
-
-      if (profileError) throw profileError;
+      const profileResponse = await fetch(`http://localhost:5000/api/profiles/${userId}`);
+      if (!profileResponse.ok) {
+        throw new Error('Failed to fetch profile');
+      }
+      const profileData = await profileResponse.json();
       setProfile(profileData);
 
       // Fetch author's notes
-      const { data: notesData, error: notesError } = await supabase
-        .from('notes')
-        .select('*')
-        .eq('user_id', userId)
-        .order('download_count', { ascending: false });
-
-      if (notesError) throw notesError;
+      const notesResponse = await fetch(`http://localhost:5000/api/notes/user/${userId}`);
+      if (!notesResponse.ok) {
+        throw new Error('Failed to fetch notes');
+      }
+      const notesData = await notesResponse.json();
       setNotes(notesData || []);
     } catch (error: unknown) {
       toast({
@@ -72,16 +67,24 @@ const AuthorProfile = () => {
 
   const handleDownload = async (note: Note) => {
     try {
-      const { error } = await supabase
-        .from('notes')
-        .update({ download_count: note.download_count + 1 })
-        .eq('id', note.id);
+      const token = localStorage.getItem('token');
+      // Increment download count
+      const response = await fetch(`http://localhost:5000/api/notes/${note.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ download_count: note.download_count + 1 }),
+      });
 
-      if (error) throw error;
+      if (!response.ok) {
+        throw new Error('Failed to update download count');
+      }
 
-      window.open(note.file_url, '_blank');
+      window.open(`http://localhost:5000${note.file_url}`, '_blank');
 
-      setNotes(notes.map(n => 
+      setNotes(notes.map(n =>
         n.id === note.id ? { ...n, download_count: n.download_count + 1 } : n
       ));
 

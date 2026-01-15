@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 
 type VerificationStatus = "idle" | "pending" | "verified" | "timeout" | "error";
 
@@ -11,6 +11,7 @@ export function usePaymentVerification(options?: { timeoutMs?: number; intervalM
   const [errorMessage, setErrorMessage] = useState<string>("");
   const timerRef = useRef<number | null>(null);
   const intervalRef = useRef<number | null>(null);
+  const { user } = useAuth();
 
   const stop = useCallback(() => {
     if (intervalRef.current) window.clearInterval(intervalRef.current);
@@ -20,6 +21,12 @@ export function usePaymentVerification(options?: { timeoutMs?: number; intervalM
   }, []);
 
   const start = useCallback(async () => {
+    if (!user) {
+      setStatus("error");
+      setErrorMessage("User not authenticated");
+      return;
+    }
+
     setStatus("pending");
     setErrorMessage("");
 
@@ -29,18 +36,28 @@ export function usePaymentVerification(options?: { timeoutMs?: number; intervalM
       return;
     }
 
-    // Poll Supabase auth user metadata
+    // Poll user profile via API
     intervalRef.current = window.setInterval(async () => {
       try {
-        const { data, error } = await supabase.auth.getUser();
-        if (error) return;
-        const donor = (data.user?.user_metadata as Record<string, unknown>)?.donorVerified === true;
-        if (donor || localStorage.getItem("donorVerified") === "true") {
-          setStatus("verified");
-          stop();
+        const token = localStorage.getItem('token');
+        const response = await fetch(`http://localhost:5000/api/profiles/${user.id}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        });
+
+        if (response.ok) {
+          const profileData = await response.json();
+          // Check if user has donor verification fields
+          const isDonor = profileData.donorVerified === true || localStorage.getItem("donorVerified") === "true";
+          if (isDonor) {
+            setStatus("verified");
+            stop();
+          }
         }
-      } catch (_) {
-        // best-effort; ignore
+      } catch (error) {
+        // best-effort; ignore network errors during polling
+        console.warn('Payment verification poll failed:', error);
       }
     }, intervalMs);
 
@@ -49,7 +66,7 @@ export function usePaymentVerification(options?: { timeoutMs?: number; intervalM
       setStatus("timeout");
       stop();
     }, timeoutMs);
-  }, [intervalMs, timeoutMs, stop]);
+  }, [intervalMs, timeoutMs, stop, user]);
 
   useEffect(() => () => stop(), [stop]);
 

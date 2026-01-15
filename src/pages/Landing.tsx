@@ -4,38 +4,16 @@ import { useNavigate } from "react-router-dom";
 import { BookOpen, TrendingUp, Award, Users, Upload, Download, Home, Search, User as UserIcon, LogOut, Menu, X } from "lucide-react";
 import heroImage from "@/assets/hero-image.jpg";
 import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import { User } from "@supabase/supabase-js";
 import { useToast } from "@/hooks/use-toast";
 import { DonateDialog } from "@/components/DonateDialog";
+import { useAuth } from "@/contexts/AuthContext";
 
 const Landing = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [user, setUser] = useState<User | null>(null);
+  const { user, logout } = useAuth();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [donatePromptOpen, setDonatePromptOpen] = useState(false);
-
-  useEffect(() => {
-    // Check auth status
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
-        setUser(session.user);
-      }
-    });
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        if (session) {
-          setUser(session.user);
-        } else {
-          setUser(null);
-        }
-      }
-    );
-
-    return () => subscription.unsubscribe();
-  }, []);
 
   // After login, softly prompt donation once unless dismissed or already donor
   useEffect(() => {
@@ -49,7 +27,7 @@ const Landing = () => {
   }, [user]);
 
   const handleSignOut = async () => {
-    await supabase.auth.signOut();
+    logout();
     toast({
       title: "Signed out",
       description: "You have been successfully signed out",
@@ -419,7 +397,7 @@ const Landing = () => {
       <footer className="py-12 bg-card border-t border-border">
         <div className="container mx-auto px-4 flex flex-col items-center gap-4 text-muted-foreground">
           <div className="flex items-center gap-3">
-            <DonateDialog user={user} defaultOpen={donatePromptOpen} triggerVariant="secondary" />
+            <DonateDialog defaultOpen={donatePromptOpen} triggerVariant="secondary" />
           </div>
           <div className="text-center">
             <p>&copy; 2025 CollegeStar. Empowering students to learn together.</p>

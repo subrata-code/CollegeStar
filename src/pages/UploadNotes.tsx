@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -8,10 +7,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Label } from "@/components/ui/label";
 import { Upload, ArrowLeft } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 
 const UploadNotes = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { user } = useAuth();
   const [uploading, setUploading] = useState(false);
   const [formData, setFormData] = useState({
     title: "",
@@ -29,11 +30,11 @@ const UploadNotes = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!file) {
+
+    if (!file || !user) {
       toast({
         title: "Error",
-        description: "Please select a file to upload",
+        description: "Please select a file and ensure you're logged in",
         variant: "destructive",
       });
       return;
@@ -42,48 +43,26 @@ const UploadNotes = () => {
     setUploading(true);
 
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      if (!user) {
-        toast({
-          title: "Error",
-          description: "You must be logged in to upload notes",
-          variant: "destructive",
-        });
-        navigate("/auth");
-        return;
+      const token = localStorage.getItem('token');
+      const formDataToSend = new FormData();
+      formDataToSend.append('title', formData.title);
+      formDataToSend.append('description', formData.description);
+      formDataToSend.append('subject', formData.subject);
+      formDataToSend.append('tags', JSON.stringify(formData.tags.split(',').map(tag => tag.trim()).filter(Boolean)));
+      formDataToSend.append('file', file);
+      formDataToSend.append('user_id', user.id);
+
+      const response = await fetch('http://localhost:5000/api/notes', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+        body: formDataToSend,
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to upload notes');
       }
-
-      // Upload file to storage
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${user.id}-${Date.now()}.${fileExt}`;
-      const filePath = `${fileName}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from('notes')
-        .upload(filePath, file);
-
-      if (uploadError) throw uploadError;
-
-      // Get public URL
-      const { data: { publicUrl } } = supabase.storage
-        .from('notes')
-        .getPublicUrl(filePath);
-
-      // Insert note record
-      const { error: insertError } = await supabase
-        .from('notes')
-        .insert({
-          user_id: user.id,
-          title: formData.title,
-          description: formData.description,
-          subject: formData.subject,
-          tags: formData.tags.split(',').map(tag => tag.trim()).filter(Boolean),
-          file_url: publicUrl,
-          file_name: file.name,
-        });
-
-      if (insertError) throw insertError;
 
       toast({
         title: "Success!",

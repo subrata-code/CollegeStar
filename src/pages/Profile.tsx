@@ -1,12 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 
 type ProfileDraft = {
   institute?: string;
@@ -25,6 +25,7 @@ const contentOptions = ["Notes", "PDFs", "Video", "Quizzes"];
 const Profile = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { user, loading: authLoading } = useAuth();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [email, setEmail] = useState<string>("");
@@ -32,23 +33,51 @@ const Profile = () => {
   const [draft, setDraft] = useState<ProfileDraft>({});
 
   useEffect(() => {
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      if (!session) {
-        navigate("/auth");
-        return;
-      }
-      try {
-        const { data } = await supabase.auth.getUser();
-        const user = data.user;
-        setEmail(user.email || "");
-        setFullName(((user?.user_metadata as Record<string, unknown>)?.full_name as string) || "");
-        const profile = ((user?.user_metadata as Record<string, unknown>)?.profile as ProfileDraft) || undefined;
-        if (profile) setDraft(profile);
-      } finally {
-        setLoading(false);
-      }
-    });
-  }, [navigate]);
+    if (!authLoading && !user) {
+      navigate("/auth");
+      return;
+    }
+
+    if (user) {
+      const loadProfile = async () => {
+        try {
+          const token = localStorage.getItem('token');
+          const response = await fetch(`http://localhost:5000/api/profiles/${user.id}`, {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+            },
+          });
+
+          if (response.ok) {
+            const profileData = await response.json();
+            setEmail(user.email || "");
+            setFullName(profileData.full_name || "");
+            setDraft({
+              institute: profileData.institute,
+              course: profileData.course,
+              stream: profileData.stream,
+              interests: profileData.interests,
+              lastQualification: profileData.lastQualification,
+              aim: profileData.aim,
+              studyHours: profileData.studyHours,
+              preferredContent: profileData.preferredContent,
+            });
+          } else {
+            setEmail(user.email || "");
+            setFullName(user.full_name || "");
+          }
+        } catch (error) {
+          console.error('Error loading profile:', error);
+          setEmail(user.email || "");
+          setFullName(user.full_name || "");
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      loadProfile();
+    }
+  }, [user, authLoading, navigate]);
 
   const completionPercent = useMemo(() => {
     const fields = ["institute", "course", "stream", "interests", "lastQualification", "aim", "studyHours", "preferredContent"] as const;
@@ -69,15 +98,35 @@ const Profile = () => {
   };
 
   const handleSave = async () => {
+    if (!user) return;
+
     setSaving(true);
     try {
-      await supabase.auth.updateUser({
-        data: {
-          full_name: fullName,
-          profile: draft,
-          profileCompletion: completionPercent,
+      const token = localStorage.getItem('token');
+      const response = await fetch(`http://localhost:5000/api/profiles/${user.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
         },
+        body: JSON.stringify({
+          full_name: fullName,
+          institute: draft.institute,
+          course: draft.course,
+          stream: draft.stream,
+          interests: draft.interests,
+          lastQualification: draft.lastQualification,
+          aim: draft.aim,
+          studyHours: draft.studyHours,
+          preferredContent: draft.preferredContent,
+          profileCompletion: completionPercent,
+        }),
       });
+
+      if (!response.ok) {
+        throw new Error('Failed to update profile');
+      }
+
       toast({ title: "Profile updated", description: "Your information has been saved." });
     } catch (error: unknown) {
       toast({ title: "Update failed", description: (error as Error)?.message || "Please try again.", variant: "destructive" });
